@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <script src="md5.js"></script>
     <script src="download.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
     <script>
       /**
        * 环境
@@ -14,7 +15,7 @@
           this.width = width;
           this.height = height;
           this.size = size;
-
+          //单个大小
           this.w = width / size;
           this.h = height / size;
         }
@@ -107,15 +108,16 @@
           const foodPos = this.food;
           if (!foodPos) return "over";
           const [foodX, foodY] = foodPos;
+
           const allAround = [
             this.getSpaces(snakeX, snakeY, (x, y) => [x, y - 1]),
             this.getSpaces(snakeX, snakeY, (x, y) => [x, y + 1]),
             this.getSpaces(snakeX, snakeY, (x, y) => [x - 1, y]),
             this.getSpaces(snakeX, snakeY, (x, y) => [x + 1, y]),
-            this.isWall(snakeX - 1, snakeY - 1),
-            this.isWall(snakeX + 1, snakeY - 1),
-            this.isWall(snakeX + 1, snakeY + 1),
-            this.isWall(snakeX - 1, snakeY + 1)
+            this.isWall(snakeX - 1, snakeY - 1) | 0,
+            this.isWall(snakeX + 1, snakeY - 1) | 0,
+            this.isWall(snakeX + 1, snakeY + 1) | 0,
+            this.isWall(snakeX - 1, snakeY + 1) | 0
           ];
           //直接把环境的描述转为string后求hash作为观察值
           //观察值 表示食物到头部距离和头部到尾部距离 以及头部周围格子的状态
@@ -124,7 +126,12 @@
             [endX - snakeX, endY - snakeY],
             allAround
           ];
-          return b64_md5(JSON.stringify(ob));
+          //观察向量
+          const obr = allAround.concat(ob[0], ob[1]);
+          // console.log(obr);
+          // return b64_md5(JSON.stringify(ob));
+
+          return JSON.stringify(obr);
         }
 
         getSpaces(x, y, next) {
