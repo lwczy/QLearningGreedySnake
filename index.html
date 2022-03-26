@@ -1,13 +1,15 @@
 <html>
   <head>
     <title>QL</title>
-
+    <meta charset="UTF-8" />
     <script src="md5.js"></script>
     <script src="download.js"></script>
     <script>
-
-      class Env{
-        constructor(ctx, width, height, size){
+      /**
+       * 环境
+       */
+      class Env {
+        constructor(ctx, width, height, size) {
           this.ctx = ctx;
           this.width = width;
           this.height = height;
@@ -17,29 +19,29 @@
           this.h = height / size;
         }
 
-        getRandomXY(){
+        getRandomXY() {
           return [(Math.random() * this.w) | 0, (Math.random() * this.h) | 0];
         }
 
-        XY2Index(x, y){
+        XY2Index(x, y) {
           return y * this.w + x;
         }
 
-        Index2XY(index){
-          return [index % this.w , (index / this.w) | 0];
+        Index2XY(index) {
+          return [index % this.w, (index / this.w) | 0];
         }
 
-        newFood(){
+        newFood() {
           const list = [];
           this.consume = 0;
-          for(let i = 0; i < this.w; i++){
-            for(let j = 0; j < this.h; j++){
-              if(this.data[i][j] === -1){
+          for (let i = 0; i < this.w; i++) {
+            for (let j = 0; j < this.h; j++) {
+              if (this.data[i][j] === -1) {
                 list.push([i, j]);
               }
             }
           }
-          if(list.length === 0) {
+          if (list.length === 0) {
             this.food = null;
             return false;
           }
@@ -49,7 +51,7 @@
           return true;
         }
 
-        newSnake(){
+        newSnake() {
           // clear old snake
           const [x, y] = this.getRandomXY();
           this.data[x][y] = this.XY2Index(x, y);
@@ -58,27 +60,33 @@
           this.snake_len = 1;
         }
 
-        get colors(){
+        get colors() {
           return {
-            ' ': 'white',
-            '#': 'black',
-            'o': 'green',
-            '*': 'gray',
-            '@': 'blue',
-          }
+            " ": "white",
+            "#": "black",
+            o: "green",
+            "*": "gray",
+            "@": "blue"
+          };
         }
 
-        get renderData(){
-          const data = this.data.map(col => col.map( data => {
-            switch(data){
-              case -1: return ' ';
-              case -2: return '#';
-              case -3: return 'o';
-              default: return '*';
-            }
-          }));
+        get renderData() {
+          const data = this.data.map((col) =>
+            col.map((data) => {
+              switch (data) {
+                case -1:
+                  return " ";
+                case -2:
+                  return "#";
+                case -3:
+                  return "o";
+                default:
+                  return "*";
+              }
+            })
+          );
           const [x, y] = this.snake_start;
-          data[x][y] = '@';
+          data[x][y] = "@";
           return data;
         }
 
@@ -89,68 +97,74 @@
         //         return [i, j];
         // }
 
-        get observation(){
+        /**
+         * 返回环境的hash值
+         * @type {string}
+         */
+        get observation() {
           const [snakeX, snakeY] = this.snake_start;
           const [endX, endY] = this.snake_end;
           const foodPos = this.food;
-          if(!foodPos)
-            return 'over';
+          if (!foodPos) return "over";
           const [foodX, foodY] = foodPos;
           const allAround = [
-            this.getSpaces(snakeX, snakeY, (x, y) => ([x, y - 1])), 
-            this.getSpaces(snakeX, snakeY, (x, y) => ([x, y + 1])), 
-            this.getSpaces(snakeX, snakeY, (x, y) => ([x - 1, y])),
-            this.getSpaces(snakeX, snakeY, (x, y) => ([x + 1, y])),
+            this.getSpaces(snakeX, snakeY, (x, y) => [x, y - 1]),
+            this.getSpaces(snakeX, snakeY, (x, y) => [x, y + 1]),
+            this.getSpaces(snakeX, snakeY, (x, y) => [x - 1, y]),
+            this.getSpaces(snakeX, snakeY, (x, y) => [x + 1, y]),
             this.isWall(snakeX - 1, snakeY - 1),
             this.isWall(snakeX + 1, snakeY - 1),
             this.isWall(snakeX + 1, snakeY + 1),
             this.isWall(snakeX - 1, snakeY + 1)
           ];
-          return b64_md5(JSON.stringify([[foodX - snakeX, foodY - snakeY], [endX - snakeX, endY - snakeY], allAround]));
+          //直接把环境的描述转为string后求hash作为观察值
+          //观察值 表示食物到头部距离和头部到尾部距离 以及头部周围格子的状态
+          const ob = [
+            [foodX - snakeX, foodY - snakeY],
+            [endX - snakeX, endY - snakeY],
+            allAround
+          ];
+          return b64_md5(JSON.stringify(ob));
         }
 
-        getSpaces(x, y, next){
+        getSpaces(x, y, next) {
           let i = 0;
           [x, y] = next(x, y);
-          for(;!this.isWall(x, y);i++){
+          for (; !this.isWall(x, y); i++) {
             [x, y] = next(x, y);
           }
           return i;
         }
 
-        isFood(x, y){
+        isFood(x, y) {
           return this.data[x][y] === -3;
         }
 
-        isWall(x, y){
-          if(x < 0 || y < 0 || x >= this.w || y >= this.h)
-            return true;
-          if(this.data[x][y] === -2)
-            return true;
-          if(this.data[x][y] >= 0)
-            return true;
+        isWall(x, y) {
+          if (x < 0 || y < 0 || x >= this.w || y >= this.h) return true;
+          if (this.data[x][y] === -2) return true;
+          if (this.data[x][y] >= 0) return true;
           return false;
         }
 
-        render(){
+        render() {
           const ctx = this.ctx;
           const data = this.renderData;
           const color = this.colors;
           ctx.clearRect(0, 0, this.width, this.height);
-          for(let x = 0; x < this.w; x++){
-            for(let y = 0; y < this.h; y++){
+          for (let x = 0; x < this.w; x++) {
+            for (let y = 0; y < this.h; y++) {
               ctx.fillStyle = color[data[x][y]];
               ctx.fillRect(x * this.size, y * this.size, this.size, this.size);
             }
           }
         }
 
-        reset(){
+        reset() {
           this.data = [];
-          for(let i = 0; i < this.width / this.size; i++){
+          for (let i = 0; i < this.width / this.size; i++) {
             const col = [];
-            for(let j = 0; j < this.height / this.size; j++)
-              col.push(-1)
+            for (let j = 0; j < this.height / this.size; j++) col.push(-1);
             this.data.push(col);
           }
 
@@ -160,37 +174,46 @@
           return this.observation;
         }
 
-        get actions(){
-          return ['l', 'r', 'u', 'd'];
+        get actions() {
+          return ["l", "r", "u", "d"];
         }
 
-        step(action){
+        step(action) {
           const [x, y] = this.snake_start;
-          let newX = x, newY = y;
+          let newX = x,
+            newY = y;
 
           this.consume++;
 
-          switch(action){
-            case 'l':newX = x - 1;break;
-            case 'r':newX = x + 1;break;
-            case 'u':newY = y - 1;break;
-            case 'd':newY = y + 1;break;
+          switch (action) {
+            case "l":
+              newX = x - 1;
+              break;
+            case "r":
+              newX = x + 1;
+              break;
+            case "u":
+              newY = y - 1;
+              break;
+            case "d":
+              newY = y + 1;
+              break;
           }
 
-          let reward = - 0.02, done = false;
+          let reward = -0.02,
+            done = false;
 
-          if(!this.isWall(newX, newY)){
+          if (!this.isWall(newX, newY)) {
             this.snake_start = [newX, newY];
             this.data[x][y] = this.XY2Index(newX, newY);
-            if(!this.isFood(newX, newY)){
+            if (!this.isFood(newX, newY)) {
               const [x, y] = this.snake_end;
               this.snake_end = this.Index2XY(this.data[x][y]);
               this.data[x][y] = -1;
             } else {
               this.snake_len++;
-              if(this.newFood())
-                reward = 1;
-              else{
+              if (this.newFood()) reward = 1;
+              else {
                 reward = 10;
                 done = true;
               }
@@ -206,8 +229,19 @@
         }
       }
 
-      class QLearningTable{
-        constructor(actions, learning_rate=0.01, reward_decay=0.9, e_greedy=0.9){
+      /**
+       * 学习器
+       */
+      class QLearningTable {
+        /**
+         * @param {string[]} actions
+         */
+        constructor(
+          actions,
+          learning_rate = 0.01,
+          reward_decay = 0.9,
+          e_greedy = 0.9
+        ) {
           this.actions = actions;
           this.learning_rate = learning_rate;
           this.reward_decay = reward_decay;
@@ -217,7 +251,9 @@
 
           this.stateLink = new Map();
         }
-
+        /**
+         * 加载配置文件
+         */
         loadData(data) {
           this.data = data;
         }
@@ -226,45 +262,56 @@
           return this.data;
         }
 
-        newState(){
-          return Object.fromEntries(this.actions.map( name => [name, 0]));
+        //////////////////////////////
+        newState() {
+          return Object.fromEntries(this.actions.map((name) => [name, 0]));
         }
 
-        getState(observation){
+        getState(observation) {
           let state = this.data[observation];
-          if(!state){
+          if (!state) {
             state = this.newState();
             this.data[observation] = state;
           }
           return state;
         }
 
-        getMax(state){
-          let max = ['', -Infinity];
-          Object.entries(state).forEach(
-            ([action, value]) => {
-              if(value > max[1]) max = [action, value];
-            }
-          )
+        /**
+         * 寻找某状态下的最佳决策
+         * 从决策表中
+         */
+        getMax(state) {
+          let max = ["", -Infinity];
+          Object.entries(state).forEach(([action, value]) => {
+            if (value > max[1]) max = [action, value];
+          });
           return max;
         }
 
-        predict(observation){
+        /**
+         * 在预定环境选择最佳决策
+         */
+        predict(observation) {
           const state = this.getState(observation);
 
           const list = Object.entries(state);
 
-          if(Math.random() > this.e_greedy){
+          if (Math.random() > this.e_greedy) {
             return list[(Math.random() * list.length) | 0][0];
           }
-          
+
           return this.getMax(state)[0];
         }
 
-        learn(observation, action, reward, observation_){
+        /**
+         * 执行一步学习
+         */
+        learn(observation, action, reward, observation_) {
+          //环境观察为一个hash字符串 此环境对应一个在此环境中做决策的数组
+          //state[action]->value  or  table[observ][action]->value
           const state = this.getState(observation);
           let newValue;
-          if(observation_ !== "over"){
+          if (observation_ !== "over") {
             const state_ = this.getState(observation_);
             newValue = reward + this.reward_decay * this.getMax(state_)[1];
           } else {
@@ -273,116 +320,117 @@
           state[action] += this.learning_rate * (newValue - state[action]);
         }
 
-        reset(){
-
-        }
-
+        reset() {}
       }
-
     </script>
   </head>
   <body>
     <canvas id="canvas" width="300" height="300"></canvas>
-    <br>
+    <br />
+    <div>轮数</div>
     <a id="episode"></a>
-    <br>
+    <br />
+    <div>得分</div>
     <a id="score"></a>
-    <br>
+    <br />
+    <div>历史最高分</div>
     <a id="maxscore"></a>
-    <br>
+    <br />
     <button onclick="saveJSON()">save</button>
-    <br>
-    <input type="file" id="file"/><button onclick="loadJSON()">load</button>
-    <br>
+    <br />
+    <input type="file" id="file" /><button onclick="loadJSON()">load</button>
+    <br />
     <button onclick="quick()">quick</button>
-    <br>
+    <br />
     <button onclick="normal()">normal</button>
-    <br>
+    <br />
     <button onclick="stopAll()">stop</button>
     <script>
-      const canvas = document.getElementById('canvas');
-      const ctx = canvas.getContext('2d');
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
       const env = new Env(ctx, 300, 300, 60);
       const RL = new QLearningTable(env.actions);
-      const episodeEle = document.getElementById('episode');
-      const scoreEle = document.getElementById('score');
-      const maxscoreEle = document.getElementById('maxscore');
-      const fileEle = document.getElementById('file');
+      const episodeEle = document.getElementById("episode");
+      const scoreEle = document.getElementById("score");
+      const maxscoreEle = document.getElementById("maxscore");
+      const fileEle = document.getElementById("file");
       let maxscore = 0;
 
       let stop = false;
 
       function saveJSON() {
-        download(JSON.stringify(RL.saveData()), "data.json", "application/json");
+        download(
+          JSON.stringify(RL.saveData()),
+          "data.json",
+          "application/json"
+        );
       }
 
-      function loadJSON(){
+      function loadJSON() {
         const files = fileEle.files;
-        if(files.length > 0){
+        if (files.length > 0) {
           const reader = new FileReader();
           reader.readAsText(files[0]);
-          reader.onload = function(){
+          reader.onload = function () {
             RL.loadData(JSON.parse(this.result));
-          }
+          };
         }
       }
 
-      function stopAll(){
+      function stopAll() {
         stop = true;
       }
 
       async function quick() {
         stop = false;
         RL.e_greedy = 0.95;
-        for(let episode = 1; ; episode++){
+        for (let episode = 1; ; episode++) {
           let score = 0;
           RL.reset();
-          for(let observation = env.reset();;){
+          for (let observation = env.reset(); ; ) {
             const action = RL.predict(observation);
             const [observation_, reward, done] = env.step(action);
             RL.learn(observation, action, reward, observation_);
             observation = observation_;
-            if(done) break;
+            if (done) break;
           }
           score = env.snake_len;
           episodeEle.innerText = episode;
           scoreEle.innerText = score;
-          if(score > maxscore){
+          if (score > maxscore) {
             maxscore = score;
             maxscoreEle.innerText = score;
           }
-          if(!(episode % 1000))
-            await new Promise(r => setTimeout(r));
-          if(stop) break;
+          if (!(episode % 1000)) await new Promise((r) => setTimeout(r));
+          if (stop) break;
         }
       }
 
       async function normal() {
         stop = false;
         RL.e_greedy = 1;
-        for(let episode = 1; ; episode++){
+        for (let episode = 1; ; episode++) {
           let score = 0;
           RL.reset();
-          for(let observation = env.reset();;){
+          for (let observation = env.reset(); ; ) {
             env.render();
-            await new Promise(r => setTimeout(r, 200));
+            await new Promise((r) => setTimeout(r, 200));
             const action = RL.predict(observation);
             const [observation_, reward, done] = env.step(action);
             RL.learn(observation, action, reward, observation_);
             observation = observation_;
-            if(done) break;
+            if (done) break;
           }
           score = env.snake_len;
           episodeEle.innerText = episode;
           scoreEle.innerText = score;
-          if(score > maxscore){
+          if (score > maxscore) {
             maxscore = score;
             maxscoreEle.innerText = score;
           }
-          if(stop) break;
+          if (stop) break;
         }
       }
-      
     </script>
   </body>
 </html>
