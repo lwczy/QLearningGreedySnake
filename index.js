@@ -92,7 +92,7 @@ class Env {
 
   /**
    * 返回环境的hash值
-   * @type {string}
+   * @type {numbe[]}
    */
   async getObservation() {
     const [snakeX, snakeY] = this.snake_start;
@@ -100,15 +100,16 @@ class Env {
     const foodPos = this.food;
     if (!foodPos) return "over";
     const [foodX, foodY] = foodPos;
+
     const allAround = [
       this.getSpaces(snakeX, snakeY, (x, y) => [x, y - 1]),
       this.getSpaces(snakeX, snakeY, (x, y) => [x, y + 1]),
       this.getSpaces(snakeX, snakeY, (x, y) => [x - 1, y]),
       this.getSpaces(snakeX, snakeY, (x, y) => [x + 1, y]),
-      this.isWall(snakeX - 1, snakeY - 1),
-      this.isWall(snakeX + 1, snakeY - 1),
-      this.isWall(snakeX + 1, snakeY + 1),
-      this.isWall(snakeX - 1, snakeY + 1),
+      this.isWall(snakeX - 1, snakeY - 1) | 0,
+      this.isWall(snakeX + 1, snakeY - 1) | 0,
+      this.isWall(snakeX + 1, snakeY + 1) | 0,
+      this.isWall(snakeX - 1, snakeY + 1) | 0,
     ];
     //直接把环境的描述转为string后求hash作为观察值
     //观察值 表示食物到头部距离和头部到尾部距离 以及头部周围格子的状态
@@ -117,6 +118,12 @@ class Env {
       [endX - snakeX, endY - snakeY],
       allAround,
     ];
+    //观察向量
+    const obr = allAround.concat(ob[0], ob[1]);
+    // console.log(obr);
+    // return b64_md5(JSON.stringify(ob));
+
+    return obr;
     async function cirtonum() {
       let v = new Blob([b64_md5(JSON.stringify(ob))]);
       let ar = await v.arrayBuffer();
@@ -124,9 +131,6 @@ class Env {
         return pre + curr;
       }, 0);
     }
-    //这个计算会导致速度奇慢无比 目前还是采用hash方法
-    // return await cirtonum();
-    return b64_md5(JSON.stringify(ob));
   }
 
   getSpaces(x, y, next) {

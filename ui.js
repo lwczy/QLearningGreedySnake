@@ -51,6 +51,7 @@ async function quick() {
   }
 }
 
+const stepgap = 50;
 async function normal() {
   stop = false;
   RL.e_greedy = 1;
@@ -59,7 +60,7 @@ async function normal() {
     RL.reset();
     for (let observation = await env.reset(); ; ) {
       env.render();
-      await new Promise((r) => setTimeout(r, 200));
+      await new Promise((r) => setTimeout(r, stepgap));
       const action = RL.predict(observation);
       const [observation_, reward, done] = await env.step(action);
       RL.learn(observation, action, reward, observation_);
