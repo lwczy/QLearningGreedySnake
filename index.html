@@ -3,6 +3,12 @@
     <title>QL</title>
     <meta charset="UTF-8" />
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.3.1/echarts.min.js"
+      integrity="sha512-41TNls7qBS/8rKqfgMho0blSRty2TgHbdHq1h8x248EseHj1ZfFPAbjWVBQssJtkXptUwaBLVC3F1W8he53bgw=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
     <script src="md5.js"></script>
     <script src="download.js"></script>
     <script src="./virtualTable.js"></script>
@@ -14,6 +20,10 @@
     <div id="cost"></div>
     <br />最近10次平均:
     <div id="avg"></div>
+    <br />最近一次weight梯度总值:
+    <div id="grad"></div>
+    <div>cost变化图：</div>
+    <div id="qushi" style="height: 300px; width: 500px"></div>
     <canvas id="canvas" width="300" height="300"></canvas>
     <br />
     <div>轮数</div>
@@ -34,6 +44,8 @@
     <button onclick="normal()">normal</button>
     <br />
     <button onclick="stopAll()">stop</button>
+    <button onclick="slow()">慢速执行</button>
+    <button onclick="fast()">快速执行</button>
     <script src="ui.js"></script>
   </body>
 </html>

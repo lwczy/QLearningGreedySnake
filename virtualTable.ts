@@ -16,6 +16,15 @@ let bias = tf.randomUniform([1, 4], 0, 1) as Tensor2D;
 function activate(d: Tensor2D) {
   return tf.sigmoid(d);
 }
+/**
+ *  本函数用于根据输入环境预测采取每个动作的预测奖励 输出为 1*4数组
+ * 输入yhat为真实的每个动作的奖励 根据realvalue生成 输出为两者两者差异值
+ * @param x 观察值 observation 数组
+ * @param y_hat 真实的q值分布（对应到每个动作）
+ * @param weight  weight参数
+ * @param bias
+ * @returns  cost值
+ */
 function cal(x: Tensor2D, y_hat: Tensor2D, weight: Tensor2D, bias: Tensor2D) {
   //x[batch,12] * w[12,4] ->batch,4+[1,4] yhat:[batch,4]
   return tf
@@ -31,15 +40,45 @@ function cal(x: Tensor2D, y_hat: Tensor2D, weight: Tensor2D, bias: Tensor2D) {
     )
     .asScalar();
 }
+/**
+ * cal函数的梯度计算函数 其中 2 3 项为cal输出的cost相对w b矩阵的梯度
+ */
 var grad = tf.grads(cal);
 
 class RawVirtualTable {
-  constructor(public actionSpace: any[]) {}
+  constructor(public actionSpace: any[]) {
+    var chartDom = document.getElementById("qushi") as HTMLDivElement;
+    this.myChart = echarts.init(chartDom);
+  }
+  myChart;
   data = {};
 
   nums: Scalar[] = [];
   sum = 0;
   printgap = 1000;
+  //趋势
+  qushi = [] as number[];
+  paint() {
+    var option = {
+      xAxis: {
+        type: "category",
+        data: this.qushi.map((_, idx) => idx),
+      },
+      yAxis: {
+        type: "value",
+      },
+      series: [
+        {
+          data: this.qushi,
+          type: "line",
+        },
+      ],
+    } as import("echarts").EChartOption;
+    //绘图
+    this.myChart.setOption(option);
+    console.log(this.qushi);
+  }
+  learning_rate = 0.1;
   /**
    * 更新价值
    * @param observ 环境
@@ -63,19 +102,28 @@ class RawVirtualTable {
       return [cost, g];
     });
     //使用g中的weight和bias的梯度修正 weight 和bias 为w=w-gw
-    weight = weight.sub(g[2]);
-    bias = bias.sub(g[3]);
+    weight = weight.sub(tf.tidy(() => g[2].mul(this.learning_rate)));
+    bias = bias.sub(tf.tidy(() => g[3].mul(this.learning_rate)));
     //修改
     this.nums.push(cost.clone());
     if (this.nums.length > 10) this.nums.shift().dispose();
+    //sum这里记录的是学习次数不是轮数
     this.sum++;
     //如果是1000的整数倍就输出
     if (this.sum % this.printgap == 0) {
-      let avg = tf.tidy(() =>
-        this.nums.reduce((p, c) => p.add(c), tf.scalar(0)).div(this.nums.length)
-      );
+      let avg = tf
+        .tidy(() =>
+          this.nums
+            .reduce((p, c) => p.add(c), tf.scalar(0))
+            .div(this.nums.length)
+        )
+        .asScalar();
+      const gradc = tf.tidy(() => g[2].abs().sum().toString());
       document.getElementById("cost").innerText = cost.toString();
       document.getElementById("avg").innerText = avg.toString();
+      document.getElementById("grad").innerText = gradc;
+      this.qushi.push(avg.arraySync());
+      this.paint();
       avg.dispose();
     }
 
